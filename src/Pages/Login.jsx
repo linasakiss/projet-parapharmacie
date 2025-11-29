@@ -1,67 +1,123 @@
-import { useState } from "react";
+import React, { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import './Auth.css';
 
-function Login() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+const Login = () => {
+  const [formData, setFormData] = useState({
+    email: '',
+    password: ''
+  });
+  const [errors, setErrors] = useState({});
+  const navigate = useNavigate();
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+
+    // Email validation
+    if (!formData.email) {
+      newErrors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = 'Email is invalid';
+    }
+
+    // Password validation
+    if (!formData.password) {
+      newErrors.password = 'Password is required';
+    } else if (formData.password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log("Login with:", email, password);
+    
+    if (validateForm()) {
+      // Simulate authentication
+      const users = JSON.parse(localStorage.getItem('parapharmacy_users') || '[]');
+      const user = users.find(u => u.email === formData.email && u.password === formData.password);
+      
+      if (user) {
+        // Store user session
+        localStorage.setItem('parapharmacy_currentUser', JSON.stringify({
+          id: user.id,
+          name: user.name,
+          email: user.email
+        }));
+        
+        // Redirect to home page
+        navigate('/');
+        window.location.reload(); // Refresh to update auth state
+      } else {
+        setErrors({ general: 'Invalid email or password' });
+      }
+    }
   };
 
   return (
-    <div
-      className="container d-flex justify-content-center align-items-center"
-      style={{ minHeight: "100vh" }}
-    >
-      <div className="col-md-4 p-4 rounded shadow bg-white">
-        <h2 className="text-center mb-4 fw-bold text-primary">Login</h2>
+    <div className="auth-container">
+      <div className="auth-form">
+        <h2>Login to Your Account</h2>
+        
+        {errors.general && (
+          <div className="error-message">{errors.general}</div>
+        )}
 
         <form onSubmit={handleSubmit}>
-          {/* Email */}
-          <div className="mb-3">
-            <label className="form-label fw-semibold">Email</label>
+          <div className="form-group">
+            <label htmlFor="email">Email</label>
             <input
               type="email"
-              className="form-control"
+              id="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              className={errors.email ? 'error' : ''}
               placeholder="Enter your email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
             />
+            {errors.email && <span className="error-text">{errors.email}</span>}
           </div>
 
-          {/* Password */}
-          <div className="mb-3">
-            <label className="form-label fw-semibold">Password</label>
+          <div className="form-group">
+            <label htmlFor="password">Password</label>
             <input
               type="password"
-              className="form-control"
+              id="password"
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              className={errors.password ? 'error' : ''}
               placeholder="Enter your password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
             />
+            {errors.password && <span className="error-text">{errors.password}</span>}
           </div>
 
-          {/* Button */}
-          <button type="submit" className="btn btn-primary w-100 fw-bold">
-            Login
-          </button>
+          <button type="submit" className="auth-button">Login</button>
         </form>
 
-        <p className="text-center mt-3">
-          Don't have an account?{" "}
-          <a
-            href="/register"
-            className="text-primary text-decoration-none fw-semibold"
-          >
-            Create one
-          </a>
+        <p className="auth-link">
+          Don't have an account? <Link to="/register">Register here</Link>
         </p>
       </div>
     </div>
   );
-}
+};
 
 export default Login;
